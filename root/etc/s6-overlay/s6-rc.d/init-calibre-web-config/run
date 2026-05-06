@@ -21,13 +21,13 @@ mkdir -p /app/calibre-web/cps/cache
 # permissions
 lsiown -R abc:abc \
     /config \
-    /app/calibre-web/cps/cache
+    /opt/calibre-web/calibre-web-1.0.0/cps/cache
 
 export CALIBRE_DBPATH=/config
 
 if [[ ! -f /config/app.db ]]; then
   echo "First time run, creating app.db..."
-  cd /app/calibre-web && s6-setuidgid abc python3 /app/calibre-web/cps.py -d > /dev/null 2>&1
+  cd /opt/calibre-web/calibre-web-1.0.0 && s6-setuidgid abc python3 /opt/calibre-web/calibre-web-1.0.0/cps.py -d > /dev/null 2>&1
   # handle app.db updates for kepubify and ext binary path
   # borrowed from crocodilestick because it's a better solution than what i was doing
   sqlite3 /config/app.db <<EOS

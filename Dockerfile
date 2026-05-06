@@ -19,6 +19,16 @@ ENV \
   PIXELFLUX_WAYLAND=true
 
 RUN \
+  CALIBRE_VERSION="$(echo ${CALIBRE_RELEASE} | cut -c2-)" && \
+  CALIBRE_URL="https://download.calibre-ebook.com/${CALIBRE_VERSION}/calibre-${CALIBRE_VERSION}-x86_64.txz" && \
+  echo ${CALIBRE_VERSION} && \
+  if ! curl -fo /tmp/calibre-tarball.txz -L "https://github.com/kovidgoyal/calibre/releases/download/v${CALIBRE_VERSION}/calibre-${CALIBRE_VERSION}-x86_64.txz"; then \
+    echo \
+      /tmp/calibre-tarball.txz -L \
+      "$CALIBRE_URL"; \
+  fi
+
+RUN \
   echo "**** install build packages ****" && \
   apt-get update && \
   apt-get install -y --no-install-recommends \
@@ -110,19 +120,13 @@ RUN \
     python3-dev && \
   apt-get -y autoremove && \
   rm -rf \
-  #  /tmp/* \
+    /tmp/* \
     /var/lib/apt/lists/* \
     /var/tmp/* \
     /root/.cache
 
-RUN \
-  python3 -m venv /lsiopy && \
-  pip install -U --no-cache-dir --find-links https://wheel-index.linuxserver.io/ubuntu/ \
-    distro
- 
 COPY root/ /
+COPY calibreconfig/ /calibreconfig/
 
-EXPOSE 0803
+EXPOSE 8083
 VOLUME /config
-
-CMD ["/bin/bash"]
