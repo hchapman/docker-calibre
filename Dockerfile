@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
+FROM ghcr.io/linuxserver/baseimage-ubuntu:noble
 
 # set version label
 ARG BUILD_DATE
@@ -19,35 +19,35 @@ ENV \
   PIXELFLUX_WAYLAND=true
 
 RUN \
-  echo "**** add icon ****" && \
-  curl -o \
-    /usr/share/selkies/www/icon.png \
-    https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/calibre-icon.png && \
-  echo "**** install runtime packages ****" && \
+  echo "**** install build packages ****" && \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-    dbus \
-    fcitx-rime \
-    fonts-wqy-microhei \
+    build-essential \
+    libldap2-dev \
+    libsasl2-dev \
+    python3-dev && \
+  echo "**** install runtime packages ****" && \
+  apt-get install -y --no-install-recommends \
+    imagemagick \
+    ghostscript \
+    libasound2t64 \
+    libldap2 \
+    libmagic1t64 \
+    libsasl2-2 \
+    libxi6 \
+    libxslt1.1 \
+    libxfixes3 \
+    python3-venv \
+    sqlite3 \
     libnss3 \
-    libopengl0 \
     libqpdf29t64 \
-    libxkbcommon-x11-0 \
-    libxcb-cursor0 \
-    libxcb-icccm4 \
-    libxcb-image0 \
-    libxcb-keysyms1 \
-    libxcb-randr0 \
-    libxcb-render-util0 \
-    libxcb-xinerama0 \
-    poppler-utils \
     python3 \
     python3-xdg \
-    ttf-wqy-zenhei \
+    python3-venv \
+    xdg-utils \
     wget \
+    unzip \
     xz-utils && \
-  apt-get install -y \
-    speech-dispatcher && \
   echo "**** install calibre ****" && \
   mkdir -p \
     /opt/calibre && \
@@ -65,7 +65,6 @@ RUN \
   tar xvf /tmp/calibre-tarball.txz -C \
     /opt/calibre && \
   /opt/calibre/calibre_postinstall && \
-  dbus-uuidgen > /etc/machine-id && \
   printf "Linuxserver.io version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version && \
   echo "**** cleanup ****" && \
   apt-get clean && \
@@ -74,5 +73,56 @@ RUN \
     /var/lib/apt/lists/* \
     /var/tmp/*
 
-# add local files
+ENV CALIBRE_CONFIG_DIRECTORY="/calibreconfig"
+
+RUN \
+  curl -fo \
+    /tmp/DeDRM_plugin_dl.zip -L \
+    "https://github.com/noDRM/DeDRM_tools/releases/download/v10.0.9/DeDRM_tools_10.0.9.zip" && \
+  unzip /tmp/DeDRM_plugin_dl.zip -d /tmp/dedrm && \
+  curl -fo \
+    /tmp/DeACSM_plugin.zip -L \
+    "https://github.com/Leseratte10/acsm-calibre-plugin/releases/download/v0.0.16/DeACSM_0.0.16.zip" && \
+  calibre-customize --add /tmp/dedrm/DeDRM_plugin.zip && \
+  calibre-customize --add /tmp/dedrm/Obok_plugin.zip && \
+  calibre-customize --add /tmp/DeACSM_plugin.zip
+
+RUN \
+  curl -fo \
+    /tmp/calibre-web.zip -L \
+    "https://github.com/hchapman/calibre-web/archive/refs/tags/v1.0.0.zip" && \
+  mkdir -p \
+    /opt/calibre-web && \
+  unzip /tmp/calibre-web.zip -d /opt/calibre-web && \
+  cd /opt/calibre-web/calibre-web-1.0.0 && \
+  python3 -m venv /lsiopy && \
+  pip install -U --no-cache-dir \
+    pip \
+    wheel && \
+  pip install -U --no-cache-dir --find-links https://wheel-index.linuxserver.io/ubuntu/ -r \
+    requirements.txt -r \
+    optional-requirements.txt && \
+  echo "**** cleanup ****" && \
+  apt-get -y purge \
+    build-essential \
+    libldap2-dev \
+    libsasl2-dev \
+    python3-dev && \
+  apt-get -y autoremove && \
+  rm -rf \
+  #  /tmp/* \
+    /var/lib/apt/lists/* \
+    /var/tmp/* \
+    /root/.cache
+
+RUN \
+  python3 -m venv /lsiopy && \
+  pip install -U --no-cache-dir --find-links https://wheel-index.linuxserver.io/ubuntu/ \
+    distro
+ 
 COPY root/ /
+
+EXPOSE 0803
+VOLUME /config
+
+CMD ["/bin/bash"]
